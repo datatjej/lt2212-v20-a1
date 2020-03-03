@@ -80,9 +80,12 @@ def selectFrequentWords(words, counts, n):
                 remaining_counts.append(count)
     return more_than_n_times, remaining_counts
 
-def part2_vis(df, m):
+def part2_vis(df, m=5):
     # DO NOT CHANGE
     assert isinstance(df, pd.DataFrame)
+    
+    
+    # CHANGE WHAT YOU WANT HERE
     df_subset=df[df['class']=='grain']
     df_subset=df_subset.sum().to_frame()
     df_subset_grain=df_subset[1:]
@@ -114,15 +117,29 @@ def part2_vis(df, m):
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels)
     plt.legend()
-    
-
-
+ 
 def part3_tfidf(df):
     # DO NOT CHANGE
     assert isinstance(df, pd.DataFrame)
 
     # CHANGE WHAT YOU WANT HERE
-    return df #DUMMY RETURN
+    noOfDocs = len(df.index)
+  
+    #remove class column in order to loop through word columns 
+    df_without_class = df.drop(df.columns[0], axis=1)
+    dictOfWordsDf = {}
+    #yields a tuple of column name and series for each column in the dataframe
+    for (columnName, columnData) in df_without_class.iteritems():
+        df = len([int(freq) for freq in columnData if int(freq) > 0])
+        if columnName not in dictOfWordsDf:
+            dictOfWordsDf.update({columnName: df})
+        else:
+            dictOfWordsDf[columnName]+=1
+    
+    df.replace()
+    #return df #DUMMY RETURN
+
+
 
 # ADD WHATEVER YOU NEED HERE, INCLUDING BONUS CODE.
 
