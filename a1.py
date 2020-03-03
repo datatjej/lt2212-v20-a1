@@ -130,17 +130,19 @@ def part3_tfidf(df):
     dictOfWordsDf = {}
     #yields a tuple of column name and series for each column in the dataframe
     for (columnName, columnData) in df_without_class.iteritems():
-        df = len([int(freq) for freq in columnData if int(freq) > 0])
-        if columnName not in dictOfWordsDf:
-            dictOfWordsDf.update({columnName: df})
-        else:
-            dictOfWordsDf[columnName]+=1
+        docFreq = len([int(freq) for freq in columnData if int(freq) > 0])
+        dictOfWordsDf.update({columnName: docFreq})
+        
+    #print(df.at['article000.txt_grain', 'and'])
+
+    ## TODO: change so that df.at is never at "class" column (even if there happens to be a word "class" in the data) 
+    for columnName,docFreq in dictOfWordsDf.items():
+        for index, row in df.iterrows():
+            #print("COLUMNNAME: ", str(columnName), ", ROWINDEX: ", index)
+            df.at[index,columnName]=df.at[index,columnName]*noOfDocs/docFreq
     
-    df.replace()
-    #return df #DUMMY RETURN
-
-
+    return df
 
 # ADD WHATEVER YOU NEED HERE, INCLUDING BONUS CODE.
 
-part1_load('grain/', 'crude/', 1)
+#part1_load('grain/', 'crude/', 1)
