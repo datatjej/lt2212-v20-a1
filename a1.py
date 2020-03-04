@@ -27,10 +27,10 @@ import matplotlib.pyplot as plt
 def part1_load(folder1, folder2, n=1):
     dict_articles_words = {}
     corpus=[]
-    articles = os.listdir(folder1)+os.listdir(folder2) #filenames inside crude
+    articles = os.listdir(folder1)+os.listdir(folder2) 
     folders=[folder1, folder2]
     for folder in folders:
-        for article in articles:
+        for article in os.listdir(folder):
             words = []
             with open(folder + "/" + article) as f: # f=filename
                 for line in f:
@@ -51,7 +51,6 @@ def part1_load(folder1, folder2, n=1):
                     else: 
                         dict_articles_words[article_plus_classname]={}
                         dict_articles_words[article_plus_classname][uniqueFrequentWords[index]]=count
-
                 
                 #temp_dict.update({uniqueFrequentWords[index]: count})
                 #for index, count in enumerate(uniqueFrequentWordCount):
