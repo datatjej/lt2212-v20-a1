@@ -1,6 +1,7 @@
 import os
 import glob
 import sys
+import math
 import pandas as pd
 import numpy as np
 import numpy.random as npr
@@ -132,15 +133,13 @@ def part3_tfidf(df):
     for (columnName, columnData) in df_without_class.iteritems():
         docFreq = len([int(freq) for freq in columnData if int(freq) > 0])
         dictOfWordsDf.update({columnName: docFreq})
-        
-    #print(df.at['article000.txt_grain', 'and'])
 
     ## TODO: change so that df.at is never at "class" column (even if there happens to be a word "class" in the data) 
     for columnName,docFreq in dictOfWordsDf.items():
         for index, row in df.iterrows():
             #print("COLUMNNAME: ", str(columnName), ", ROWINDEX: ", index)
-            df.at[index,columnName]=df.at[index,columnName]*noOfDocs/docFreq
-    
+            if(df.columns.get_loc(columnName)!=0):
+                df.at[index,columnName]=df.at[index,columnName]*math.log(noOfDocs/docFreq)
     return df
 
 # ADD WHATEVER YOU NEED HERE, INCLUDING BONUS CODE.
