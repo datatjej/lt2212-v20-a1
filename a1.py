@@ -6,25 +6,11 @@ import pandas as pd
 import numpy as np
 import numpy.random as npr
 import matplotlib.pyplot as plt
-#from collections import Counter
-#import nltk
-
-#nltk.FreqDist()
+from tqdm import tqdm
 
 # ADD ANY OTHER IMPORTS YOU LIKE
 
-#C502
-
-# DO NOT CHANGE THE SIGNATURES OF ANY DEFINED FUNCTIONS.
-# YOU CAN ADD "HELPER" FUNCTIONS IF YOU LIKE.
-
-#print(os.getcwd('/grain'))
-#print(os.listdir(os.getcwd('/grain')))
-#print(glob.glob('/grain')+"/*")
-
-#Either a list of lists, or a dictionary
-
-def part1_load(folder1, folder2, n=1):
+def part1_load(folder1, folder2, n):
     dict_articles_words = {}
     corpus=[]
     articles = os.listdir(folder1)+os.listdir(folder2) 
@@ -35,15 +21,14 @@ def part1_load(folder1, folder2, n=1):
             with open(folder + "/" + article) as f: # f=filename
                 for line in f:
                     words += [word.lower() for word in line.split() if (word.isalpha())]
-            ## find unique words and their frequency
+            ## find unique words in every article and their frequency in the article:
                 uniqueWords, wordCount=getUnique(words)
-
-            ## only select those unique words which show up more than n times
+            
+            ## only select those unique words which show up more than n times:
                 uniqueFrequentWords, uniqueFrequentWordCount=selectFrequentWords(uniqueWords, wordCount, n)
                 corpus += [word for word in uniqueFrequentWords]
-                #print("length of unique words=", len(uniqueFrequentWords))
-            ## saven frequent words and their count to dictionary:
-                #temp_dict={}
+           
+            ## save frequent words and their count to dictionary:
                 article_plus_classname = article + '_' + folder
                 for index, count in enumerate(uniqueFrequentWordCount):
                     if article_plus_classname in dict_articles_words:
@@ -52,19 +37,19 @@ def part1_load(folder1, folder2, n=1):
                         dict_articles_words[article_plus_classname]={}
                         dict_articles_words[article_plus_classname][uniqueFrequentWords[index]]=count
                 
-                #temp_dict.update({uniqueFrequentWords[index]: count})
-                #for index, count in enumerate(uniqueFrequentWordCount):
-                #dict_articles_words.update({article + '_' + folder1: temp_dict})
-               
-    #print("shape dict", len(dict_articles_words))
-    #print("dictionary", dict_articles_words)
-    #print(corpus)
-    
+    # extract class name from the file extention the files were previously given:
     k = [k.partition("_")[2] for k,v in dict_articles_words.items()]
     
+    #fill out NaN cells with 0's:
     df = pd.DataFrame(dict_articles_words).fillna(0) 
+    
+    #transpose the dateframe so that x-axis becomes y-axis and vice versa: 
     df_transposed = df.T
-    df_transposed.insert(0,'class', k, True)
+    
+    #add a column 'class_name' to the dataframe:  
+    df_transposed.insert(0,'class_name', k, True)
+   
+    
     return df_transposed
     
 def getUnique(x):
@@ -80,66 +65,52 @@ def selectFrequentWords(words, counts, n):
                 remaining_counts.append(count)
     return more_than_n_times, remaining_counts
 
-def part2_vis(df, m=5):
-    # DO NOT CHANGE
+
+def part2_vis(df, m):
     assert isinstance(df, pd.DataFrame)
     
-    
-    # CHANGE WHAT YOU WANT HERE
-    df_subset=df[df['class']=='grain']
-    df_subset=df_subset.sum().to_frame()
-    df_subset_grain=df_subset[1:]
-    df_subset_grain.columns = ['words']
-    
-    df_subset=df[df['class']=='crude']
-    df_subset=df_subset.sum().to_frame()
-    df_subset_crude=df_subset[1:]
-    df_subset_crude.columns = ['words']
-    
-    df_total=df_subset_grain + df_subset_crude
-    df_total=df_total.sort_values(by=['words'], ascending = False)
-    l_crude=[]
-    l_grain=[]
-    for word in df_total[:m].index:
-        l_crude.append(df_subset_crude.loc[word, 'words'])
-        l_grain.append(df_subset_grain.loc[word, 'words'])
-    
-    plt.figure(figsize=(12, 6))
-    labels=[word for word in df_total[:m].index]
+    #summerize and sort all columns (after 'classname', )
+    df_sum = df.sum()[2:].sort_values(ascending = False)
+    #take out m most frequent words:
+    df_top = df_sum[:m]
+    #filter input dataframe on top m frequent words: 
+    df_filtered = df.filter(df_top.index, axis=1)
+    #insert class name column again:
+    df_filtered.insert(0, 'class_name', df['class_name'])
+    #group and summarize columns by class name:
+    df_grouped = df_filtered.groupby(['class_name']).sum().sort_values(by=['class_name'])
 
-    x = np.arange(len(labels))  # the label locations
+    return df_grouped.T.plot(kind="bar")
 
-    width = 0.35  # the width of the bars
-
-    fig, ax = plt.subplots()
-    rects1 = ax.bar(x - width/2, l_crude, width, label='crude')
-    rects2 = ax.bar(x + width/2, l_grain, width, label='grain')
-    ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels)
-    plt.legend()
- 
 def part3_tfidf(df):
     # DO NOT CHANGE
     assert isinstance(df, pd.DataFrame)
 
-    # CHANGE WHAT YOU WANT HERE
     noOfDocs = len(df.index)
-  
-    #remove class column in order to loop through word columns 
-    df_without_class = df.drop(df.columns[0], axis=1)
-    dictOfWordsDf = {}
-    #yields a tuple of column name and series for each column in the dataframe
+    #remove class column in order to loop through word columns:
+    df_without_class=df.iloc[:, 1:] 
+    #look at the number of cells in each word column that don't contain zeros and save that number as document frequency
+    docFreqList=[]
     for (columnName, columnData) in df_without_class.iteritems():
         docFreq = len([int(freq) for freq in columnData if int(freq) > 0])
-        dictOfWordsDf.update({columnName: docFreq})
+        docFreqList.append(docFreq)
+   
+    #make a copy of the input dataframe's indices and data:
+    df2=df.copy(deep=True)
+    #make calucations on items in docFreqList and save in tdidfList: 
+    tfidfList=[]
+    for freq in docFreqList:
+        if(freq==0):
+            tfidfList.append(1)
+        else:
+            tfidfList.append(np.log(noOfDocs/freq))
+    
+    #populate new dataframe with values from tfidfList:
+    df2.iloc[:, 1:]=df.iloc[:, 1:]*np.array(tfidfList)
+    df2.iloc[:, 0]=df.iloc[:, 0]
 
-    ## TODO: change so that df.at is never at "class" column (even if there happens to be a word "class" in the data) 
-    for columnName,docFreq in dictOfWordsDf.items():
-        for index, row in df.iterrows():
-            #print("COLUMNNAME: ", str(columnName), ", ROWINDEX: ", index)
-            if(df.columns.get_loc(columnName)!=0):
-                df.at[index,columnName]=df.at[index,columnName]*math.log(noOfDocs/docFreq)
-    return df
+    return df2
+
 
 # ADD WHATEVER YOU NEED HERE, INCLUDING BONUS CODE.
 
